@@ -50,14 +50,20 @@ def dom_with_Kmeans(img_list, k=3):
     label_counts = np.bincount(labels)
     
     # Find the most frequent label
-    return colors, labels
+    # return colors, labels
 
     dominant_label = np.argmax(label_counts)
+
+    labels = np.argsort(label_counts)[::-1]
+    if dominant_label != labels[0]:
+        print("***************************************error!")
+	
+    dom_colors = [colors[d_lab] for d_lab in labels[:3]]
     
     # Get the dominant color
     dominant_color = colors[dominant_label]
     
-    return dominant_color
+    return dom_colors
 
 # Example usage
 
@@ -100,7 +106,7 @@ def classify_color(image_path, mask_img=None):
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
         cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if mask[i][j] > 100])
     else: # [0,0,0] 이외의 pixel값만 뽑아서 list
-        cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if not np.array_equal(image_rgb[i][j], np.array([0,0,0]))])
+        cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if not (np.array_equal(image_rgb[i][j], np.array([0,0,0])) or np.array_equal(image_rgb[i][j], np.array([255, 255, 255])))])
         
 
     # 이미지에서 가장 많은 색상 추출
@@ -128,18 +134,47 @@ def classify_color(image_path, mask_img=None):
         dominant_color = second_dominant_color
 
     # dominant_color = dom_with_Kmeans(cropped_list) # Kmeans by 최준혁
-    return dom_with_Kmeans(cropped_list)
+    kmeans_color = dom_with_Kmeans(cropped_list)
+    print(kmeans_color)
+
+    dominant_color = kmeans_color[0]
+    k_c = np.array([[kmeans_color[0] for i in range(200)] for j in range(20)])
+    cv2.imshow("cloth",cv2.cvtColor(image_rgb,cv2.COLOR_RGB2BGR))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # Dimensions of the paper (height, width)
+    height = 300
+    width = 250
+
+    # Blue color in BGR format (since OpenCV uses BGR instead of RGB)
+    # Create a blank image with blue color
+    k1 = np.full((height, width, 3), kmeans_color[0], dtype=np.uint8)
+    k2 = np.full((height, width, 3), kmeans_color[1], dtype=np.uint8)
+    k3 = np.full((height, width, 3), kmeans_color[2], dtype=np.uint8)
+    kk = np.hstack((k1, k2, k3))
+
+    # Show the image
+    cv2.imshow("kk", cv2.cvtColor(kk,cv2.COLOR_RGB2BGR))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 
     # 가장 유사한 색상 찾기
     min_distance = float('inf')
     classified_color = None
+    dis = []
+    c_d = []
     for color_name, color_value in colors.items():
         distance = np.linalg.norm(np.array(color_value) - dominant_color)
+        dis.append(distance)
+        c_d.append(color_name)
         if distance < min_distance:
             min_distance = distance
             classified_color = color_name
 
-    return classified_color
+    dist = np.argsort(np.array(dis))[:-1]
+
+    return classified_color, dist, c_d
 
 # image_path = "test13.png"  # 분석할 이미지 경로
 # predicted_color = classify_color(image_path)
@@ -149,18 +184,19 @@ def classify_color(image_path, mask_img=None):
 ## 모든 test 파일 color check해서 test_res 디렉토리에 저장 #by 최준혁
 import os
 import glob
-test_img = [f for f in glob.glob(os.path.join("./color_test_image","*.png")) if "test" in f]
-
+test_img = [f for f in glob.glob(os.path.join("./sample(test)","*","*.png"))]
+# print(test_img.size)
 # os.rmdir("./test_res_rembg")
 os.makedirs("./test_res_rembg", exist_ok=True)
 for t in test_img:
     test_num = os.path.basename(t)[:-4]
     img = cv2.imread(t)
 
-    mask_img = f"./rembg_mask\\{test_num}_mask.png"
+    # mask_img = f"./rembg_mask\\{test_num}_mask.png"
 
-    pred_color = classify_color(t, mask_img)
-    print(pred_color)
+    pred_color, dd, cd = classify_color(t)
+    preds = [cd[i] for i in dd]
+    print(preds)
     # cv2.imshow(pred_color, img)
     # cv2.imwrite(f"./test_res_rembg\\{pred_color}_{test_num}.png", img)
 

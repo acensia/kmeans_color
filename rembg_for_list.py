@@ -1,8 +1,7 @@
 import os, glob
     
 test_img = [f for f in glob.glob(os.path.join("./color_test_image","*.png")) if "test" in f]
-    
-    
+
 def rembg_remove(img_paths, only_mask=False):
     import rembg
     from rembg import remove, new_session
@@ -28,3 +27,7 @@ def rembg_remove(img_paths, only_mask=False):
                 input = i.read()
                 output = remove(input, session=session, only_mask=only_mask)
                 o.write(output)
+
+
+
+rembg_remove(test_img, True)
