@@ -2,36 +2,43 @@ import cv2
 import numpy as np
 
 
+import json
+
+with open("./hex_map.json", 'r') as j:
+    c_dict = json.load(j)
+def rgb_to_hex(rgb):
+    return "{:02x}{:02x}{:02x}".format(rgb[0], rgb[1], rgb[2])
+
 # kmeans function by 최준혁
 from sklearn.cluster import KMeans
 
-def centroid_histogram(clt):
-	# grab the number of different clusters and create a histogram
-	# based on the number of pixels assigned to each cluster
-	numLabels = np.arange(0, len(np.unique(clt.labels_)) + 1)
-	(hist, _) = np.histogram(clt.labels_, bins = numLabels)
-	# normalize the histogram, such that it sums to one
-	hist = hist.astype("float")
-	hist /= hist.sum()
-	# return the histogram
-	return hist
-
-def plot_colors(hist, centroids):
-	# initialize the bar chart representing the relative frequency
-	# of each of the colors
-	bar = np.zeros((50, 300, 3), dtype = "uint8")
-	startX = 0
-	# loop over the percentage of each cluster and the color of
-	# each cluster
-	for (percent, color) in zip(hist, centroids):
-		# plot the relative percentage of each cluster
-		endX = startX + (percent * 300)
-		cv2.rectangle(bar, (int(startX), 0), (int(endX), 50),
-			color.astype("uint8").tolist(), -1)
-		startX = endX
+#not used
+# def centroid_histogram(clt): #not used
+# 	# grab the number of different clusters and create a histogram
+# 	# based on the number of pixels assigned to each cluster
+# 	numLabels = np.arange(0, len(np.unique(clt.labels_)) + 1)
+# 	(hist, _) = np.histogram(clt.labels_, bins = numLabels)
+# 	# normalize the histogram, such that it sums to one
+# 	hist = hist.astype("float")
+# 	hist /= hist.sum()
+# 	# return the histogram
+# 	return hist
+# def plot_colors(hist, centroids): #not used
+# 	# initialize the bar chart representing the relative frequency
+# 	# of each of the colors
+# 	bar = np.zeros((50, 300, 3), dtype = "uint8")
+# 	startX = 0
+# 	# loop over the percentage of each cluster and the color of
+# 	# each cluster
+# 	for (percent, color) in zip(hist, centroids):
+# 		# plot the relative percentage of each cluster
+# 		endX = startX + (percent * 300)
+# 		cv2.rectangle(bar, (int(startX), 0), (int(endX), 50),
+# 			color.astype("uint8").tolist(), -1)
+# 		startX = endX
 	
-	# return the bar chart
-	return bar
+# 	# return the bar chart
+# 	return bar
 
 def dom_with_Kmeans(img_list, k=3):
     pixels = img_list
@@ -43,7 +50,7 @@ def dom_with_Kmeans(img_list, k=3):
     # Get the colors
     colors = kmeans.cluster_centers_
     
-    # Get the labels (which cluster each pixel belongs to)
+    # Get the labels (which cluster each pfixel belongs to)
     labels = kmeans.labels_
     
     # Count the frequency of each label
@@ -56,10 +63,12 @@ def dom_with_Kmeans(img_list, k=3):
     # dominant_color = colors[dominant_label]
 
     labels = np.argsort(label_counts)[::-1]
-	
+    dom_counts = [label_counts[i] for i in labels[:3]]
+    total = sum(dom_counts)
+    dom_counts = [d/total for d in dom_counts]
     dom_colors = [colors[d_lab] for d_lab in labels[:3]]
     
-    return dom_colors
+    return dom_colors, dom_counts
 
 # Example usage
 
@@ -122,7 +131,7 @@ def classify_color(image_path, mask_img=None):
     dominant_color = unique_colors[sorted_indices[0]]
     second_dominant_color = unique_colors[sorted_indices[1]]
 
-    print(dominant_color) # dominant 확인 by 최준혁
+    # print(dominant_color) # dominant 확인 by 최준혁
 
 
     # 완전한 흰색과 검은색인 경우에 대한 처리
@@ -130,13 +139,10 @@ def classify_color(image_path, mask_img=None):
         dominant_color = second_dominant_color
 
     # dominant_color = dom_with_Kmeans(cropped_list) # Kmeans by 최준혁
-    kmeans_color = dom_with_Kmeans(cropped_list)
-    print(kmeans_color)
+    kmeans_color, kmeans_dis = dom_with_Kmeans(cropped_list)
+    # print(kmeans_color)
 
     dominant_color = kmeans_color[0]
-    cv2.imshow("cloth",cv2.cvtColor(image_rgb,cv2.COLOR_RGB2BGR))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     # Dimensions of the paper (height, width)
     height = 300
     width = 250
@@ -170,7 +176,7 @@ def classify_color(image_path, mask_img=None):
     # dist = np.argsort(np.array(dis))[:-1]
 
     # return classified_color, dist, c_d
-    
+    print(kmeans_dis)
     st = [0, 51, 102, 153, 204, 255]
     fst, snd, trd = kmeans_color[:3]
     def nearest(px):
@@ -184,10 +190,15 @@ def classify_color(image_path, mask_img=None):
     kk = np.hstack((k1, k2, k3))
 
     # Show the image
+    cv2.imshow("cloth",cv2.cvtColor(image_rgb,cv2.COLOR_RGB2BGR))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
     cv2.imshow("kk", cv2.cvtColor(kk,cv2.COLOR_RGB2BGR))
     cv2.waitKey(0)
-    cv2.destroyAllWindows()    
-    return fst_nearest
+    cv2.destroyAllWindows()   
+     
+    return c_dict[rgb_to_hex(fst_nearest)]
     
 
 # image_path = "test13.png"  # 분석할 이미지 경로
@@ -211,7 +222,7 @@ for t in test_img:
     pred_color = classify_color(t, mask_img=mask_img)
     print(pred_color)
     # cv2.imshow(pred_color, img)
-    # cv2.imwrite(f"./test_res_rembg\\{pred_color}_{test_num}.png", img)
+    cv2.imwrite(f"./test_res_rembg\\{pred_color}_{test_num}.png", img)
 
 
 
