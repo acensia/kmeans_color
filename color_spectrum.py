@@ -4,7 +4,11 @@ import cv2
 # Dimensions of the paper (height, width)
 
 avail = [0, 51, 102, 153, 204, 255]
-img = np.array([[[int(i/42)*42, int(j/51)*42, int(k/51)*42] for k in range(256) for j in range(256)] for i in range(256)], dtype=np.uint8)
+img = np.full((300, 1, 3), [0,0,0], dtype=np.uint8)
+for i in avail:
+    for j in avail:
+        for k in avail:
+            img = np.hstack((img, np.full((300, 3, 3), [i, j, k], dtype=np.uint8)))
 
 print(img.shape)
 
