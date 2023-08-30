@@ -12,6 +12,15 @@ def rgb_to_hex(rgb):
 # kmeans function by 최준혁
 from sklearn.cluster import KMeans
 
+st = [0, 51, 102, 153, 204, 255]
+def nearest(pxs):
+    p0 = min(st, key=lambda x : abs(x - pxs[0]))
+    p1 = min(st, key=lambda x : abs(x - pxs[1]))
+    p2 =min(st, key=lambda x : abs(x - pxs[2]))
+    
+    
+    return np.array((p0, p1, p2))
+
 #not used
 # def centroid_histogram(clt): #not used
 # 	# grab the number of different clusters and create a histogram
@@ -90,7 +99,7 @@ colors = {
     'purple' : (106, 40, 173)
 }
 
-def classify_color(image_path, mask_img=None):
+def classify_color(image_path, mask_img=None, rec_num=1):
     image = cv2.imread(image_path)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR을 RGB로 변환
 
@@ -109,7 +118,7 @@ def classify_color(image_path, mask_img=None):
     if mask_img: # mask 흰색 영역 내의 pixel값만 뽑아서 list
         mask = cv2.imread(mask_img)
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-        cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if mask[i][j] > 100])
+        cropped_list = np.array([nearest(image_rgb[i][j]) for i in range(height) for j in range(width) if mask[i][j] > 100])
     else: # [0,0,0] 이외의 pixel값만 뽑아서 list
         cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if not (np.array_equal(image_rgb[i][j], np.array([0,0,0])) or np.array_equal(image_rgb[i][j], np.array([255, 255, 255])))])
         
@@ -138,28 +147,6 @@ def classify_color(image_path, mask_img=None):
     if np.array_equal(dominant_color, [255, 255, 255]) or np.array_equal(dominant_color, [0, 0, 0]):
         dominant_color = second_dominant_color
 
-    # dominant_color = dom_with_Kmeans(cropped_list) # Kmeans by 최준혁
-    kmeans_color, kmeans_dis = dom_with_Kmeans(cropped_list)
-    # print(kmeans_color)
-
-    dominant_color = kmeans_color[0]
-    # Dimensions of the paper (height, width)
-    height = 300
-    width = 250
-
-    # Blue color in BGR format (since OpenCV uses BGR instead of RGB)
-    # Create a blank image with blue color
-    # k1 = np.full((height, width, 3), kmeans_color[0], dtype=np.uint8)
-    # k2 = np.full((height, width, 3), kmeans_color[1], dtype=np.uint8)
-    # k3 = np.full((height, width, 3), kmeans_color[2], dtype=np.uint8)
-    # kk = np.hstack((k1, k2, k3))
-
-    # # Show the image
-    # cv2.imshow("kk", cv2.cvtColor(kk,cv2.COLOR_RGB2BGR))
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-
     # 가장 유사한 색상 찾기
     # min_distance = float('inf')
     # classified_color = None
@@ -174,31 +161,63 @@ def classify_color(image_path, mask_img=None):
     #         classified_color = color_name
 
     # dist = np.argsort(np.array(dis))[:-1]
-
+    print(dominant_color)
+    return c_dict[rgb_to_hex(dominant_color)]
     # return classified_color, dist, c_d
+    
+        # dominant_color = dom_with_Kmeans(cropped_list) # Kmeans by 최준혁
+    kmeans_color, kmeans_dis = dom_with_Kmeans(cropped_list)
+    # print(kmeans_color)
+
+    dominant_color = kmeans_color[0]
+    print(kmeans_color[0])
+    print(kmeans_color[1])
+    print(kmeans_color[2])
+    
+    
     print(kmeans_dis)
-    st = [0, 51, 102, 153, 204, 255]
     fst, snd, trd = kmeans_color[:3]
-    def nearest(px):
-        return min(st, key=lambda x : abs(x - px))
-    fst_nearest = np.array([nearest(fst[0]), nearest(fst[1]), nearest(fst[2])])
-    snd_nearest = np.array([nearest(snd[0]), nearest(snd[1]), nearest(snd[2])])
-    trd_nearest = np.array([nearest(trd[0]), nearest(trd[1]), nearest(trd[2])])
+    
+    
+    
+    # aver_color = [fst[0]*kmeans_dis[0] + snd[0]*kmeans_dis[1] + trd[0]*kmeans_dis[2], fst[1]*kmeans_dis[0] + snd[1]*kmeans_dis[1] + trd[1]*kmeans_dis[2], fst[2]*kmeans_dis[0] + snd[2]*kmeans_dis[1] + trd[2]*kmeans_dis[2]]
+    # if rec_num==1:
+    #     return c_dict[rgb_to_hex(nearest(aver_color))]
+    
+    height = 300
+    width = 250
+    
+    kg1 = np.full((height, width, 3), fst, dtype=np.uint8)
+    kg2 = np.full((height, width, 3), snd, dtype=np.uint8)
+    kg3 = np.full((height, width, 3), trd, dtype=np.uint8)
+    kkg = np.hstack((kg1, kg2, kg3))
+    
+    fst_nearest = nearest(fst)
+    snd_nearest = nearest(snd)
+    trd_nearest = nearest(trd)
+    
     k1 = np.full((height, width, 3), fst_nearest, dtype=np.uint8)
     k2 = np.full((height, width, 3), snd_nearest, dtype=np.uint8)
     k3 = np.full((height, width, 3), trd_nearest, dtype=np.uint8)
     kk = np.hstack((k1, k2, k3))
 
-    # Show the image
+    # # Show the image
     cv2.imshow("cloth",cv2.cvtColor(image_rgb,cv2.COLOR_RGB2BGR))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
+    # cv2.imshow("kkg", cv2.cvtColor(kkg,cv2.COLOR_RGB2BGR))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    
     cv2.imshow("kk", cv2.cvtColor(kk,cv2.COLOR_RGB2BGR))
     cv2.waitKey(0)
     cv2.destroyAllWindows()   
-     
-    return c_dict[rgb_to_hex(fst_nearest)]
+    # Dimensions of the paper (height, width)
+    
+    # Show the imag
+    # return classified_color
+    return c_dict[rgb_to_hex(fst_nearest)], c_dict[rgb_to_hex(snd_nearest)], c_dict[rgb_to_hex(trd_nearest)]
     
 
 # image_path = "test13.png"  # 분석할 이미지 경로
@@ -212,7 +231,8 @@ import glob
 test_img = [f for f in glob.glob(os.path.join("./color_test_image","*.png"))]
 # print(test_img.size)
 # os.rmdir("./test_res_rembg")
-os.makedirs("./test_res_rembg", exist_ok=True)
+os.makedirs("./test_res_near1st", exist_ok=True)
+# os.makedirs("./colors", exist_ok=True)
 for t in test_img:
     test_num = os.path.basename(t)[:-4]
     img = cv2.imread(t)
@@ -221,8 +241,14 @@ for t in test_img:
 
     pred_color = classify_color(t, mask_img=mask_img)
     print(pred_color)
+    # cv2.imwrite(f"./test_res_rembg\\{pred_color}_{test_num}.png", img)
+    # rec_num=3
+
+    # pred_color, p2, p3 = classify_color(t, mask_img=mask_img)
+    # print(pred_color, p2, p3)
     # cv2.imshow(pred_color, img)
-    cv2.imwrite(f"./test_res_rembg\\{pred_color}_{test_num}.png", img)
+    cv2.imwrite(f"./test_res_near1st\\{pred_color}_{test_num}.png", img)
+    # cv2.imwrite(f"./colors\\{pred_color}_{p2}_{p3}/.png", img)
 
 
 
