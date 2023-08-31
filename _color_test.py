@@ -5,14 +5,20 @@ import json
 
 with open("./hex_map.json", 'r') as j:
     c_dict = json.load(j)
+with open("./kmeans_map.json", 'r') as j:
+    k_dict = json.load(j)
 
-def show_colors(c):    
+def show_colors(c, wind):    
     colors = []
     for rgb in c:
+        print(rgb)
         paper = np.full((200, 200, 3), rgb, dtype=np.uint8)
         colors.append(paper)
-        
-    cv2.imshow("colors", cv2.cvtColor(np.hstack(colors), cv2.COLOR_BGR2RGB))
+    total = np.hstack(colors)
+    print(total)
+    total = cv2.cvtColor(total, cv2.COLOR_RGB2BGR)
+    cv2.imshow(wind, total)
+    return
     
     
 def rgb_to_hex(rgb): # convert rgb array to hex code
@@ -21,13 +27,28 @@ def rgb_to_hex(rgb): # convert rgb array to hex code
 # kmeans function by 최준혁
 from sklearn.cluster import KMeans
 
-def cvt216(pxs):  # convert rgb into the value in 216
+def cvt_216(pxs):  # convert rgb into the value in 216
     st = [0, 51, 102, 153, 204, 255]
     p0 = min(st, key=lambda x : abs(x - pxs[0]))
     p1 = min(st, key=lambda x : abs(x - pxs[1]))
     p2 =min(st, key=lambda x : abs(x - pxs[2]))
 
     return np.array((p0, p1, p2))
+
+def cvt_closest(pxs):
+    dict = k_dict
+    min_distance = float('inf')
+    closest = -1
+    for i in dict:
+        point = np.array(dict[i], dtype=float)
+        distance = np.linalg.norm(np.array(point) - pxs)
+        if distance < min_distance:
+            min_distance = distance
+            closest = i
+    
+    return closest, dict[closest]
+        
+        
 
 def pixels_argsort(li): # argsort pixels in list, must be 3 channels
     return np.unique(li, axis=0, return_counts=True)
@@ -149,23 +170,24 @@ def classify_color(image_path, mask_img=None, imshow_check=False):
     # # get average color with clusters' rate  
     # aver_color = [fst[0]*kmeans_dis[0] + snd[0]*kmeans_dis[1] + trd[0]*kmeans_dis[2], fst[1]*kmeans_dis[0] + snd[1]*kmeans_dis[1] + trd[1]*kmeans_dis[2], fst[2]*kmeans_dis[0] + snd[2]*kmeans_dis[1] + trd[2]*kmeans_dis[2]]
 
-    fst_cvt216 = cvt216(fst)
-    snd_cvt216 = cvt216(snd)
-    trd_cvt216 = cvt216(trd)
+    fst_cvt = cvt_216(fst)
+    snd_cvt = cvt_216(snd)
+    trd_cvt = cvt_216(trd)
     
     
     # Show the image
     if imshow_check:
         cv2.imshow("cloth",cv2.cvtColor(image_rgb,cv2.COLOR_RGB2BGR))
-        show_colors([fst, snd, trd])
-        show_colors([fst_cvt216, snd_cvt216, trd_cvt216])
+        show_colors([fst, snd, trd], "og")
+        show_colors([fst_cvt, snd_cvt, trd_cvt], "cvt")
 
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     
     # Show the imag
     # return classified_color
-    return c_dict[rgb_to_hex(fst_cvt216)], c_dict[rgb_to_hex(snd_cvt216)], c_dict[rgb_to_hex(trd_cvt216)]
+    # return f, s, t
+    return c_dict[rgb_to_hex(fst_cvt)], c_dict[rgb_to_hex(snd_cvt)], c_dict[rgb_to_hex(trd_cvt)]
 
 
 ## 모든 test 파일 color check해서 test_res 디렉토리에 저장 #by 최준혁

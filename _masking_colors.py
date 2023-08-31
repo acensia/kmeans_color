@@ -2,6 +2,6 @@ from _color_test import *
 from _rembg_for_list import *
 
 
-maskfolder = rembg_remove("./color_test_image", only_mask=True)
+maskfolder = rembg_remove("./resized_testset", only_mask=True, image_type="*.jpg")
 
-color_test("./color_test_image", maskfolder)
+color_test("./resized_testset", maskfolder, imshow_check=True, image_type="*.jpg")

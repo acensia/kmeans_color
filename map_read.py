@@ -24,6 +24,7 @@ with open("color_map.txt", "r") as f:
         # Remove brackets and whitespace from color_values, then split by comma
         color_values = color_values.replace("[", "").replace("]", "").strip()
         color_values = color_values.split(", ")
+        print(color_values)
         color_values = [s.strip() for s in color_values]
         for color_hex in color_values:
             c_hex = duplicate_characters(color_hex)
