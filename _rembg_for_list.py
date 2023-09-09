@@ -2,7 +2,7 @@ import os, glob
 import rembg
 from rembg import remove, new_session
     
-def rembg_remove(img_paths, only_mask=True, image_type="*.png"):
+def rembg_remove_list(img_paths, only_mask=True, image_type="*.png"):
     
     test_img = glob.glob(os.path.join(img_paths,image_type))
 
@@ -30,3 +30,10 @@ def rembg_remove(img_paths, only_mask=True, image_type="*.png"):
                 o.write(output)
                 
     return f"{img_paths}{masked}"
+
+
+def rembg_remove(img, only_mask=True):
+    
+    mask = remove(img, only_mask=only_mask)
+    
+    return mask

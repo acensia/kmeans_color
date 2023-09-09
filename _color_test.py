@@ -11,11 +11,9 @@ with open("./kmeans_map.json", 'r') as j:
 def show_colors(c, wind):    
     colors = []
     for rgb in c:
-        print(rgb)
         paper = np.full((200, 200, 3), rgb, dtype=np.uint8)
         colors.append(paper)
     total = np.hstack(colors)
-    print(total)
     total = cv2.cvtColor(total, cv2.COLOR_RGB2BGR)
     cv2.imshow(wind, total)
     return
@@ -99,20 +97,13 @@ colors = {
     'purple' : (106, 40, 173)
 }
 
-def classify_color(image_path, mask_img=None, imshow_check=False):
-    image = cv2.imread(image_path)
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR을 RGB로 변환
+def classify_color(image_rgb, mask_img=None, imshow_check=False):
 
     # 이미지 중앙 부분 크기 및 마진 설정
     center_margin = 0.4  # 이미지 가로 및 세로 크기의 % 만큼을 중앙 부분으로 사용
     height, width, _ = image_rgb.shape
     center_size = int(min(height, width) * (1 - center_margin * 2))
 
-    # 중앙 부분 자르기
-    # center_x = width // 2
-    # center_y = height // 2
-    # cropped_image = image_rgb[center_y - center_size // 2:center_y + center_size // 2,
-    #                           center_x - center_size // 2:center_x + center_size // 2]
 
     # crop with background mask by 최준혁
     if mask_img: # mask 흰색 영역 내의 pixel값만 뽑아서 list
@@ -127,36 +118,6 @@ def classify_color(image_path, mask_img=None, imshow_check=False):
     # list 내 에서 가장 많은 색상 value 추출 관련
     unique_colors, color_counts = pixels_argsort(cropped_list)
     
-        
-    # # 가장 많은 색상 및 두 번째로 많은 색상 추출
-    # sorted_indices = np.argsort(color_counts)[::-1] # [3, 1, 0, 2, 4][::-1] -> [4, 2, 0, 1, 3]
-    # dominant_color = unique_colors[sorted_indices[0]]
-    # second_dominant_color = unique_colors[sorted_indices[1]]
-    # # 완전한 흰색과 검은색인 경우에 대한 처리
-    # if np.array_equal(dominant_color, [255, 255, 255]) or np.array_equal(dominant_color, [0, 0, 0]):
-    #     dominant_color = second_dominant_color
-    # 가장 유사한 색상 찾기
-    # min_distance = float('inf')
-    # classified_color = None
-    # dis = []  # color별 거리 저장
-    # c_d = []  # color -> label_number 매핑
-    # for color_name, color_value in colors.items():
-    #     distance = np.linalg.norm(np.array(color_value) - dominant_color)
-    #     dis.append(distance)
-    #     c_d.append(color_name)
-    #     if distance < min_distance:
-    #         min_distance = distance
-    #         classified_color = color_name
-
-    # dist = np.argsort(np.array(dis))[:-1]
-    
-    # 전체 pixels rgb 평균값  by 최준혁
-    # mean_color_R = np.mean(cropped_list[:, 0])
-    # mean_color_G = np.mean(cropped_list[:, 1])
-    # mean_color_B = np.mean(cropped_list[:, 2])
-    # mean_color = np.array([mean_color_R, mean_color_G, mean_color_B])
-    # print(mean_color_R, mean_color_G, mean_color_B)
-
     kmeans_color, kmeans_dis = dom_with_Kmeans(cropped_list) # Kmeans by 최준혁
     # print(kmeans_color)
 
@@ -195,7 +156,7 @@ import os
 import glob
 
 
-def color_test(foldername, maskfolder, image_type="*.png", imshow_check=False):
+def color_test_list(foldername, maskfolder, image_type="*.png", imshow_check=False):
 
     test_img = [f for f in glob.glob(os.path.join(foldername,image_type))]
 
@@ -215,5 +176,8 @@ def color_test(foldername, maskfolder, image_type="*.png", imshow_check=False):
 
 
 
-
-
+def color_test(img, mask, imshow_check=False):
+    # ensure img is in rgb, not bgr or else
+    pred_color, p2, p3 = classify_color(img, mask_img=mask, imshow_check=imshow_check)
+    
+    return pred_color
