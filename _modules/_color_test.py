@@ -97,7 +97,7 @@ colors = {
     'purple' : (106, 40, 173)
 }
 
-def classify_color(image_rgb, mask_img=None, imshow_check=False):
+def classify_color(image_rgb, mask=None, imshow_check=False):
 
     # 이미지 중앙 부분 크기 및 마진 설정
     center_margin = 0.4  # 이미지 가로 및 세로 크기의 % 만큼을 중앙 부분으로 사용
@@ -106,9 +106,7 @@ def classify_color(image_rgb, mask_img=None, imshow_check=False):
 
 
     # crop with background mask by 최준혁
-    if mask_img: # mask 흰색 영역 내의 pixel값만 뽑아서 list
-        mask = cv2.imread(mask_img)
-        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    if mask is not None: # mask 흰색 영역 내의 pixel값만 뽑아서 list
         
         cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if mask[i][j] > 100])
     else: # [0,0,0] 이외의 pixel값만 뽑아서 list (거의 폐기)
@@ -166,8 +164,11 @@ def color_test_list(foldername, maskfolder, image_type="*.png", imshow_check=Fal
     for i,t in enumerate(test_img):
         test_num = os.path.basename(t)[:-4]
         img = cv2.imread(t)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         mask_img = f"{maskfolder}\\{test_num}_mask.png"
+        mask = cv2.imread(mask_img)
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
         pred_color, p2, p3 = classify_color(t, mask_img=mask_img, imshow_check=imshow_check)
         print(i, pred_color, p2, p3)
@@ -178,6 +179,6 @@ def color_test_list(foldername, maskfolder, image_type="*.png", imshow_check=Fal
 
 def color_test(img, mask, imshow_check=False):
     # ensure img is in rgb, not bgr or else
-    pred_color, p2, p3 = classify_color(img, mask_img=mask, imshow_check=imshow_check)
+    pred_color, p2, p3 = classify_color(img, mask=mask, imshow_check=imshow_check)
     
     return pred_color
