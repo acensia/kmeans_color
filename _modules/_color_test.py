@@ -97,18 +97,19 @@ colors = {
     'purple' : (106, 40, 173)
 }
 
-def classify_color(image_rgb, mask=None, imshow_check=False):
-
-    # 이미지 중앙 부분 크기 및 마진 설정
-    center_margin = 0.4  # 이미지 가로 및 세로 크기의 % 만큼을 중앙 부분으로 사용
+def classify_color_by_rgb(image_rgb, mask=None, imshow_check=False):
     height, width, _ = image_rgb.shape
-    center_size = int(min(height, width) * (1 - center_margin * 2))
+
+
+    # for extracting center value
+    # # 이미지 중앙 부분 크기 및 마진 설정
+    # center_margin = 0.4  # 이미지 가로 및 세로 크기의 % 만큼을 중앙 부분으로 사용
+    # center_size = int(min(height, width) * (1 - center_margin * 2))
 
 
     # crop with background mask by 최준혁
     if mask is not None: # mask 흰색 영역 내의 pixel값만 뽑아서 list
-        
-        cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if mask[i][j] > 100])
+        cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if mask[i][j] > 200])
     else: # [0,0,0] 이외의 pixel값만 뽑아서 list (거의 폐기)
         cropped_list = np.array([image_rgb[i][j] for i in range(height) for j in range(width) if not (np.array_equal(image_rgb[i][j], np.array([0,0,0])) or np.array_equal(image_rgb[i][j], np.array([255, 255, 255])))])
         
@@ -149,6 +150,11 @@ def classify_color(image_rgb, mask=None, imshow_check=False):
     return c_dict[rgb_to_hex(fst_cvt)], c_dict[rgb_to_hex(snd_cvt)], c_dict[rgb_to_hex(trd_cvt)]
 
 
+
+def classify_color_by_hsv(image_rgb, mask=None, imshow_check=False):
+    image_hsv = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2HSV)
+
+
 ## 모든 test 파일 color check해서 test_res 디렉토리에 저장 #by 최준혁
 import os
 import glob
@@ -162,23 +168,23 @@ def color_test_list(foldername, maskfolder, image_type="*.png", imshow_check=Fal
     # os.makedirs("./colors", exist_ok=True)
 
     for i,t in enumerate(test_img):
-        test_num = os.path.basename(t)[:-4]
+        img_name = os.path.basename(t)[:-4]
         img = cv2.imread(t)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        mask_img = f"{maskfolder}\\{test_num}_mask.png"
+        mask_img = f"{maskfolder}\\{img_name}_mask.png"
         mask = cv2.imread(mask_img)
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
-        pred_color, p2, p3 = classify_color(t, mask_img=mask_img, imshow_check=imshow_check)
+        pred_color, p2, p3 = classify_color_by_rgb(img, mask=mask, imshow_check=imshow_check)
         print(i, pred_color, p2, p3)
         # cv2.imshow(pred_color, img)
-        cv2.imwrite(f"{foldername}_kmeans\\{pred_color}_{test_num}.png", img)
+        cv2.imwrite(f"{foldername}_kmeans\\{pred_color}_{img_name}.png", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
 
 def color_test(img, mask, imshow_check=False):
     # ensure img is in rgb, not bgr or else
-    pred_color, p2, p3 = classify_color(img, mask=mask, imshow_check=imshow_check)
+    pred_color, p2, p3 = classify_color_by_rgb(img, mask=mask, imshow_check=imshow_check)
     
     return pred_color
